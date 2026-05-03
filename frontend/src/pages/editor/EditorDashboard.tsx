@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BookPlus, BookOpen, Pencil, Trash2, Loader2, Library } from 'lucide-react'
+import {
+  BookPlus, BookOpen, Pencil, Trash2, Loader2, Library,
+  DollarSign, Check, X,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { booksApi } from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
@@ -17,14 +20,84 @@ interface Book {
   is_published: boolean
   created_at: string
   page_count?: number
+  price?: string
 }
 
+// ── Inline Price Editor ───────────────────────────────────────
+function PriceEditor({
+  bookId,
+  currentPrice,
+  onSaved,
+  onClose,
+}: {
+  bookId: string
+  currentPrice: string
+  onSaved: (newPrice: string) => void
+  onClose: () => void
+}) {
+  const [price, setPrice] = useState(currentPrice)
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await booksApi.update(bookId, { price: price || null })
+      onSaved(price)
+      toast.success('Price updated!')
+    } catch {
+      toast.error('Failed to update price.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 animate-slide-down">
+      <div className="relative">
+        <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-subtle" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={price}
+          onChange={e => setPrice(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') handleSave()
+            if (e.key === 'Escape') onClose()
+          }}
+          placeholder="e.g. $14.99"
+          className="input-field pl-7 py-1.5 text-sm w-32"
+        />
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors disabled:opacity-60"
+        title="Save price"
+      >
+        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+      </button>
+      <button
+        onClick={onClose}
+        className="p-1.5 rounded-lg text-content-muted hover:bg-surface-overlay transition-colors"
+        title="Cancel"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  )
+}
+
+// ── Main Dashboard ────────────────────────────────────────────
 export default function EditorDashboard() {
   const { t } = useTranslation()
   const { user } = useAuthStore()
-  const [books, setBooks]       = useState<Book[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const [books, setBooks]         = useState<Book[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [deleting, setDeleting]   = useState<string | null>(null)
+  const [editingPrice, setEditingPrice] = useState<string | null>(null)
 
   async function fetchBooks() {
     try {
@@ -51,6 +124,11 @@ export default function EditorDashboard() {
     } finally {
       setDeleting(null)
     }
+  }
+
+  function handlePriceSaved(bookId: string, newPrice: string) {
+    setBooks(prev => prev.map(b => b.id === bookId ? { ...b, price: newPrice } : b))
+    setEditingPrice(null)
   }
 
   if (loading) return <div className="flex justify-center pt-20"><LoadingSpinner size="lg" /></div>
@@ -133,6 +211,31 @@ export default function EditorDashboard() {
                   <p className="text-sm text-content-muted truncate">
                     {t('book.by')} {book.author}
                   </p>
+
+                  {/* Price row */}
+                  <div className="mt-2">
+                    {editingPrice === book.id ? (
+                      <PriceEditor
+                        bookId={book.id}
+                        currentPrice={book.price ?? ''}
+                        onSaved={(p) => handlePriceSaved(book.id, p)}
+                        onClose={() => setEditingPrice(null)}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setEditingPrice(book.id)}
+                        className="flex items-center gap-1.5 text-xs text-content-muted hover:text-primary-600 dark:hover:text-primary-400 transition-colors group/price"
+                        title="Edit price"
+                      >
+                        <DollarSign className="w-3 h-3" />
+                        <span className="group-hover/price:underline underline-offset-2">
+                          {book.price ? book.price : 'Set price…'}
+                        </span>
+                        <Pencil className="w-3 h-3 opacity-0 group-hover/price:opacity-100 transition-opacity" />
+                      </button>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {book.genre && (
                       <span className="badge-info text-xs">{book.genre}</span>

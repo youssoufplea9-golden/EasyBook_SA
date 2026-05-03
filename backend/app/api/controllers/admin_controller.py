@@ -68,3 +68,12 @@ async def update_user_status(
 ):
     """Update any user's status."""
     return await service.update_user_status(user_id, data.status)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[RequireAdmin])
+async def delete_user(
+    user_id: uuid.UUID,
+    service: Annotated[AdminService, Depends(_get_service)],
+):
+    """Permanently delete a user. Admins cannot be deleted."""
+    await service.delete_user(user_id)

@@ -57,3 +57,11 @@ class AdminService:
 
         updated = await self._repo.update_status(user_id, status)
         return UserResponse.model_validate(updated)
+
+    async def delete_user(self, user_id: uuid.UUID) -> None:
+        user = await self._repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundException("User")
+        if user.role == UserRole.ADMIN:
+            raise ForbiddenException("Cannot delete an admin account")
+        await self._repo.delete(user_id)

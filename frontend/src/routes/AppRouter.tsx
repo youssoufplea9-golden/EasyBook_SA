@@ -35,6 +35,7 @@ const BookFormPage       = lazy(() => import('@/pages/editor/BookFormPage'))
 const ClientLayout       = lazy(() => import('@/pages/client/ClientLayout'))
 const CatalogPage        = lazy(() => import('@/pages/client/CatalogPage'))
 const BookDetailPage     = lazy(() => import('@/pages/client/BookDetailPage'))
+const CartPage           = lazy(() => import('@/pages/client/CartPage'))
 
 // ── Fallback ──────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ export default function AppRouter() {
             <Route element={<ClientLayout />}>
               <Route path="/catalog"          element={<CatalogPage />} />
               <Route path="/catalog/:id"      element={<BookDetailPage />} />
+              <Route path="/cart"             element={<CartPage />} />
             </Route>
           </Route>
 

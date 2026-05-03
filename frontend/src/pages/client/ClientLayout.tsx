@@ -1,10 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, ShoppingCart } from 'lucide-react'
 import { Topbar } from '@/components/shared/Topbar'
+import { useCartStore } from '@/store/cartStore'
 
 export default function ClientLayout() {
   const { t } = useTranslation()
+  const cartCount = useCartStore(s => s.items.length)
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -25,6 +27,27 @@ export default function ClientLayout() {
           >
             <BookOpen className="w-4 h-4" />
             {t('client.catalog')}
+          </NavLink>
+
+          <NavLink
+            to="/cart"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
+                isActive
+                  ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-content-muted hover:text-content'
+              }`
+            }
+          >
+            <span className="relative">
+              <ShoppingCart className="w-4 h-4" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-primary-600 text-white text-[10px] flex items-center justify-center font-bold leading-none">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </span>
+            My Cart
           </NavLink>
         </nav>
       </div>

@@ -109,4 +109,5 @@ export const adminApi = {
     api.get('/admin/users', { params: { skip, limit } }),
   updateUserStatus:  (id: string, status: string) =>
     api.patch(`/admin/users/${id}/status`, { status }),
+  deleteUser:        (id: string) => api.delete(`/admin/users/${id}`),
 }

@@ -4,9 +4,12 @@ import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft, BookOpen, User, Hash, Globe, Calendar,
   FileText, Building2, Tag, BookMarked, DollarSign,
+  ShoppingCart, CheckCircle,
 } from 'lucide-react'
 import { booksApi } from '@/services/api'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { useCartStore } from '@/store/cartStore'
+import toast from 'react-hot-toast'
 
 interface Book {
   id: string; isbn?: string; title: string; author: string
@@ -35,9 +38,12 @@ export default function BookDetailPage() {
   const { id }   = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const [book, setBook]     = useState<Book | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [book, setBook]         = useState<Book | null>(null)
+  const [loading, setLoading]   = useState(true)
   const [notFound, setNotFound] = useState(false)
+
+  const { addToCart, removeFromCart, isInCart } = useCartStore()
+  const inCart = book ? isInCart(book.id) : false
 
   useEffect(() => {
     if (!id) return
@@ -46,6 +52,23 @@ export default function BookDetailPage() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [id])
+
+  function handleCartToggle() {
+    if (!book) return
+    if (inCart) {
+      removeFromCart(book.id)
+      toast.success(`Removed "${book.title}" from cart.`)
+    } else {
+      addToCart({
+        id:              book.id,
+        title:           book.title,
+        author:          book.author,
+        cover_image_url: book.cover_image_url,
+        price:           book.price,
+      })
+      toast.success(`Added "${book.title}" to cart!`)
+    }
+  }
 
   if (loading) return (
     <div className="flex justify-center pt-20"><LoadingSpinner size="lg" /></div>
@@ -124,6 +147,33 @@ export default function BookDetailPage() {
             <p className="text-lg text-content-muted">
               {t('book.by')} <span className="font-medium text-content">{book.author}</span>
             </p>
+          </div>
+
+          {/* Price + Cart CTA */}
+          <div className="card p-5 flex items-center justify-between gap-4">
+            <div>
+              {book.price ? (
+                <>
+                  <p className="text-xs text-content-muted mb-0.5">Price</p>
+                  <p className="text-2xl font-bold text-content">{book.price}</p>
+                </>
+              ) : (
+                <p className="text-sm text-content-muted italic">No price listed</p>
+              )}
+            </div>
+            <button
+              id={`cart-btn-${book.id}`}
+              onClick={handleCartToggle}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                inCart
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-glow-sm'
+                  : 'btn-primary'
+              }`}
+            >
+              {inCart
+                ? <><CheckCircle className="w-4 h-4" /> In Cart</>
+                : <><ShoppingCart className="w-4 h-4" /> Add to Cart</>}
+            </button>
           </div>
 
           {/* Description */}

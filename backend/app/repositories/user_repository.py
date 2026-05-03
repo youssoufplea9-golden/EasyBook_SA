@@ -5,7 +5,7 @@ Completely decoupled from business logic.
 import uuid
 from typing import Sequence
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete as sql_delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.models import User, UserRole, UserStatus
@@ -80,3 +80,7 @@ class UserRepository:
             select(func.count()).select_from(User).where(User.email == email)
         )
         return result.scalar_one() > 0
+
+    async def delete(self, user_id: uuid.UUID) -> None:
+        await self._db.execute(sql_delete(User).where(User.id == user_id))
+        await self._db.flush()
